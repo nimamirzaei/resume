@@ -1,0 +1,22 @@
+{
+  "name": "MOHAMMAD MIRZAEI",
+  "role": "Backend Developer",
+  "contact": "Düren\nNimamirzaei65@gmail.com\n+49 (0) 1573 0187 245\nlinkedin.com/in/nimamirzaei\n",
+  "summary": "Software Engineer with 5+ years of experience in IT infrastructure and backend development. Strong background in Linux-based systems and networking, building production-ready backend services with Golang and Laravel (PHP). Involved in backend and API testing as part of the development process, using PHPUnit, Postman, and manual testing to validate features and endpoints. Experienced in RESTful API design, relational databases, and Docker-based development and deployment workflows, with a solid understanding of system architecture, security fundamentals, and production operations.",
+  "exp1_title": "Developer — Fleetpool GmbH",
+  "exp1_meta": "Cologne, Germany · Jun 2020 – Present · Golang · Laravel (PHP) · Docker · PostgreSQL · MySQL",
+  "exp1_bullets": "• Developed and maintained backend services using Golang and Laravel (PHP) in production environments.\n• Containerized backend services using Docker to standardize development and deployment workflows.\n• Designed and optimized RESTful APIs for web applications.\n• Designed and managed relational databases (PostgreSQL, MySQL).\n• Improved performance through query optimization and clean architecture practices.\n• Implemented authentication, authorization, and role-based access control.\n• Performed basic backend and API testing as part of the development workflow.\n• Wrote and executed unit tests for PHP components using PHPUnit.\n• Manually tested backend features and business logic before releases.\n• Used Postman to validate REST API endpoints, request/response payloads, and error handling.\n• Collaborated with cross-functional teams to identify and fix defects early in the development cycle.",
+  "exp2_title": "Senior Network Engineer / Junior Web Application Developer — NIGC Arak",
+  "exp2_meta": "Arak, Iran · Jun 2016 – Nov 2019 · ASP.NET Core · C# · MSSQL · Angular · Networking/Security",
+  "exp2_bullets": "• Developed internal web applications using ASP.NET Core, C#, MSSQL, Angular, HTML, and CSS.\n• Designed and maintained enterprise network and security infrastructure.\n• Configured and troubleshot routers, switches, and UTMs.\n• Implemented network access control for HQ and branch offices.",
+  "exp3_title": "Senior Network Engineer — Shabakeh Gostar",
+  "exp3_meta": "Tehran, Iran · Nov 2013 – Jun 2016 · Sophos UTM · Firewalls · VPN · IPS · Data Center Security",
+  "exp3_bullets": "• Consulted on data center network and security architecture in multi-vendor environments.\n• Designed and implemented firewall, VPN, IPS, and web security solutions.\n• Deployed and supported Sophos UTM devices across customer environments.\n• Contributed to documentation and customer training.",
+  "exp4_title": "Earlier Experience — Technical & IT Support Roles",
+  "exp4_meta": "Iran · Feb 2008 – Nov 2013 · Networking · Systems Support · CCTV Infrastructure",
+  "exp4_bullets": "• Technical Director (Rayan Karan Hami): Led CCTV system design and implementation; set up and maintained recording servers and network infrastructure.\n• IT Support Specialist (Jahan Farda Rayane): Maintained Cisco switches and LAN environments; diagnosed and resolved hardware, software, and network issues.\n• Help Desk Specialist (Notary Public No. 10, Part-time): Provided first-line IT support; installed and repaired computer hardware and software.",
+  "skills": "• Backend: Golang, PHP (Laravel), ASP.NET Core, C#\n• Databases: PostgreSQL, MySQL, MSSQL\n• Containers: Docker, Docker Compose\n• Systems: Linux, Git\n• Web: REST APIs, Angular, HTML, CSS\n• Testing (as part of development): PHPUnit, Postman, Manual Backend & API Testing\n• Security & Networking: Firewalls, VPN, Cisco, Sophos UTM",
+  "edu_text": "• B.Sc. Computer Software Engineering\n• Islamic Azad University (IAU) · 2008 – 2012",
+  "languages": "• English (Fluent)\n• German (B2)\n• Persian (Native)",
+  "certifications_training": "• German (B2) — telc Deutsch B2 (Professional Working Proficiency)\n• Professional Scrum Master I\n• PHP Tutorial course\n• CCNA\n• CCNP Route and Switch\n• LPIC-1\n• Golang"
+}

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Resume Editor</title>
+    <link rel="stylesheet" href="style.css?v=3">
+  </head>
+  <body>
+    <form class="page" id="resume-form">
+    <div class="badge"></div>
+    <div></div>
+      <section class="mast">
+        <div class="mast-left">
+          <h3 class="field title inline" data-name="name"></h3>
+          <input type="hidden" name="name" value="" />
+          <textarea class="field inline role" name="role" rows="1"></textarea>
+        </div>
+        <div class="mast-right contact">
+          <textarea class="field" name="contact"></textarea>
+        </div>
+        <div class="mast-summary">
+          <textarea class="field summary" name="summary"></textarea>
+        </div>
+      </section>
+
+      <div class="grid">
+        <section>
+          <h2 class="no-lines" data-i18n="experience">Experience</h2>
+
+          <div class="section no-lines">
+            <h3 class="field title" data-name="exp1_title"></h3>
+            <input
+              type="hidden"
+              name="exp1_title"
+              value=""
+            />
+            <p class="field" data-name="exp1_meta"></p>
+            <input
+              type="hidden"
+              name="exp1_meta"
+              value=""
+            />
+            <textarea class="field list-style" name="exp1_bullets"></textarea>
+          </div>
+
+          <div class="section no-lines">
+            <h3 class="field title" data-name="exp2_title"></h3>
+            <input
+              type="hidden"
+              name="exp2_title"
+              value=""
+            />
+            <p class="field" data-name="exp2_meta"></p>
+            <input
+              type="hidden"
+              name="exp2_meta"
+              value=""
+            />
+            <textarea class="field list-style" name="exp2_bullets"></textarea>
+          </div>
+
+          <div class="section no-lines">
+            <h3 class="field title" data-name="exp3_title"></h3>
+            <input
+              type="hidden"
+              name="exp3_title"
+              value=""
+            />
+            <p class="field" data-name="exp3_meta"></p>
+            <input
+              type="hidden"
+              name="exp3_meta"
+              value=""
+            />
+            <textarea class="field list-style" name="exp3_bullets"></textarea>
+          </div>
+
+          <!-- Combined earlier roles into one box to keep the layout clean (fits A4 better). -->
+          <div class="section no-lines">
+            <h3 class="field title" data-name="exp4_title"></h3>
+            <input
+              type="hidden"
+              name="exp4_title"
+              value=""
+            />
+            <p class="field" data-name="exp4_meta"></p>
+            <input
+              type="hidden"
+              name="exp4_meta"
+              value=""
+            />
+            <textarea class="field list-style" name="exp4_bullets"></textarea>
+          </div>
+        </section>
+
+        <section>
+      
+          <h2 class="underlined" data-i18n="skills">Skills</h2>
+            <textarea class="field list-style" name="skills"></textarea>
+      
+          <h2 class="underlined" data-i18n="education">Education</h2>
+          <textarea class="field list-style" name="edu_text"></textarea>
+          <h2 class="underlined" data-i18n="languages">Languages</h2>
+          <textarea class="field list-style" name="languages"></textarea>
+          <h2 class="underlined" data-i18n="certifications_training">Certifications & Training</h2>
+          <textarea class="field list-style" name="certifications_training"></textarea>
+        </section>
+      </div>
+
+      <div class="controls">
+        <button type="submit" id="save-btn" data-i18n="save">Save</button>
+        <button type="button" id="print-btn" data-i18n="print">Print</button>
+        <button type="button" id="lang-btn">Deutsch</button>
+        <span id="status">Not saved yet</span>
+      </div>
+    </form>
+
+    <script src="script.js?v=3"></script>
+  </body>
+</html>
