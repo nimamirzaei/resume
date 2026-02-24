@@ -311,6 +311,26 @@
         white-space: pre-wrap;
         overflow-wrap: anywhere;
       }
+      .rich-field a.contact-link {
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      .rich-field[data-rich-name="contact"] a.contact-link,
+      .rich-field[data-rich-name="cover_date"] a.contact-link {
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .rich-field[data-rich-name="cover_text"] p,
+      .rich-field[data-rich-name="cover_text"] div {
+        margin: 0 0 0.9em 0;
+      }
+      .rich-field[data-rich-name="cover_text"] p:last-child,
+      .rich-field[data-rich-name="cover_text"] div:last-child {
+        margin-bottom: 0;
+      }
+      .print-mirror .print-link-line {
+        display: block;
+      }
       .rich-field.inline.role {
         min-height: 40px;
       }
@@ -682,6 +702,26 @@
           word-break: normal;
           hyphens: auto;
         }
+        .print-mirror a {
+          pointer-events: auto !important;
+          cursor: pointer;
+          color: inherit !important;
+          text-decoration: underline;
+        }
+        .print-mirror[data-print-for="contact"] a,
+        .print-mirror[data-print-for="cover_date"] a {
+          display: block !important;
+          color: #000 !important;
+          text-decoration: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        .print-mirror[data-print-for="contact"] .print-link-line,
+        .print-mirror[data-print-for="cover_date"] .print-link-line {
+          display: block;
+          margin: 0;
+          padding: 0;
+        }
         .cover-page .cover-grid {
           display: grid;
           grid-template-columns: 1fr 0.5fr;
@@ -700,6 +740,14 @@
         }
         .cover-page [data-print-for="cover_text"] {
           min-height: 160mm;
+        }
+        .print-mirror[data-print-for="cover_text"] p,
+        .print-mirror[data-print-for="cover_text"] div {
+          margin: 0 0 0.9em 0 !important;
+        }
+        .print-mirror[data-print-for="cover_text"] p:last-child,
+        .print-mirror[data-print-for="cover_text"] div:last-child {
+          margin-bottom: 0 !important;
         }
         input.field,
         textarea.field {

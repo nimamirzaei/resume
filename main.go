@@ -30,6 +30,13 @@ func newAPI() *api {
 
 func main() {
 	api := newAPI()
+	api.registerRoutes()
+	if err := http.ListenAndServe(":8080", api.mux); err != nil {
+		panic(err)
+	}
+}
+
+func (api *api) registerRoutes() {
 	api.mux.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "style.css")
 	})
@@ -211,10 +218,6 @@ func main() {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
-
-	if err := http.ListenAndServe(":8080", api.mux); err != nil {
-		panic(err)
-	}
 }
 
 func normalizedLang(lang string) string {

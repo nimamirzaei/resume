@@ -192,6 +192,11 @@ function syncPrintMirror(el) {
   if (!mirror) return;
   const rich = richEditors.get(el);
   if (rich) {
+    if (isLinkifiedContactField(el.name)) {
+      renderContactPrintMirror(el, mirror, rich);
+      applyStyleToElementByKey(el.name, mirror);
+      return;
+    }
     mirror.innerHTML = rich.innerHTML || "";
     return;
   }
@@ -273,6 +278,148 @@ function toEditableHtml(value) {
   return escapeHtml(normalized).replace(/\n/g, "<br>");
 }
 
+function createLinkifiedTextFragment(text, doc) {
+  const fragment = doc.createDocumentFragment();
+  const value = String(text || "");
+  const pattern =
+    /((https?:\/\/|www\.)[^\s<]+|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|\b(?:[A-Z0-9-]+\.)+[A-Z]{2,}(?:\/[^\s<]*)?)/gi;
+  let lastIndex = 0;
+  let matched = false;
+  let match = pattern.exec(value);
+  while (match) {
+    const token = match[0];
+    const cleaned = token.replace(/[.,;:!?]+$/g, "");
+    const trailing = token.slice(cleaned.length);
+    const start = match.index;
+    const end = start + token.length;
+    if (start > lastIndex) {
+      fragment.appendChild(doc.createTextNode(value.slice(lastIndex, start)));
+    }
+    if (!cleaned) {
+      fragment.appendChild(doc.createTextNode(token));
+      lastIndex = end;
+      match = pattern.exec(value);
+      continue;
+    }
+    const anchor = doc.createElement("a");
+    const isEmail =
+      cleaned.includes("@") && !/^https?:\/\//i.test(cleaned) && !/^www\./i.test(cleaned);
+    const href = isEmail
+      ? `mailto:${cleaned}`
+      : /^https?:\/\//i.test(cleaned)
+        ? cleaned
+        : `https://${cleaned}`;
+    anchor.href = href;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    anchor.setAttribute("contenteditable", "false");
+    anchor.className = "contact-link";
+    anchor.textContent = cleaned;
+    fragment.appendChild(anchor);
+    if (trailing) fragment.appendChild(doc.createTextNode(trailing));
+    lastIndex = end;
+    matched = true;
+    match = pattern.exec(value);
+  }
+  if (!matched) return null;
+  if (lastIndex < value.length) {
+    fragment.appendChild(doc.createTextNode(value.slice(lastIndex)));
+  }
+  return fragment;
+}
+
+function normalizeContactHref(href, text) {
+  const rawHref = String(href || "").trim();
+  if (rawHref) {
+    if (/^(https?:|mailto:)/i.test(rawHref)) return rawHref;
+    if (rawHref.includes("@")) return `mailto:${rawHref}`;
+    return `https://${rawHref}`;
+  }
+  const rawText = String(text || "").trim();
+  if (!rawText) return "";
+  if (rawText.includes("@")) return `mailto:${rawText}`;
+  if (/^https?:\/\//i.test(rawText)) return rawText;
+  return `https://${rawText}`;
+}
+
+function isLinkifiedContactField(name) {
+  return (
+    name === "contact" ||
+    name === "cover_recipient" ||
+    name === "cover_text" ||
+    name === "cover_date"
+  );
+}
+
+function normalizeContactAnchors(rich) {
+  if (!rich || !isLinkifiedContactField(rich.getAttribute("data-rich-name") || "")) return;
+  rich.querySelectorAll("a").forEach((anchor) => {
+    const normalizedHref = normalizeContactHref(anchor.getAttribute("href"), anchor.textContent);
+    if (!normalizedHref) return;
+    anchor.setAttribute("href", normalizedHref);
+    anchor.setAttribute("target", "_blank");
+    anchor.setAttribute("rel", "noopener noreferrer");
+    anchor.setAttribute("contenteditable", "false");
+    anchor.classList.add("contact-link");
+  });
+}
+
+function linkifyContactRichField(rich) {
+  if (!rich || !isLinkifiedContactField(rich.getAttribute("data-rich-name") || "")) return false;
+  normalizeContactAnchors(rich);
+  const walker = document.createTreeWalker(rich, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  let node = walker.nextNode();
+  while (node) {
+    const parent = node.parentElement;
+    if (parent && !parent.closest("a")) textNodes.push(node);
+    node = walker.nextNode();
+  }
+  let changed = false;
+  textNodes.forEach((textNode) => {
+    const replacement = createLinkifiedTextFragment(textNode.nodeValue, document);
+    if (!replacement) return;
+    textNode.replaceWith(replacement);
+    changed = true;
+  });
+  return changed;
+}
+
+function findAnchorFromEventTarget(target) {
+  if (!target) return null;
+  if (target instanceof HTMLAnchorElement) return target;
+  if (target instanceof Element) return target.closest("a");
+  if (target.nodeType === Node.TEXT_NODE && target.parentElement) {
+    return target.parentElement.closest("a");
+  }
+  return null;
+}
+
+function openLinkFromAnchor(anchor) {
+  if (!anchor) return false;
+  const href = (anchor.getAttribute("href") || "").trim();
+  if (!href) return false;
+  const opened = window.open(href, "_blank", "noopener,noreferrer");
+  if (!opened) window.location.href = href;
+  return true;
+}
+
+function renderContactPrintMirror(el, mirror, rich) {
+  const visibleText = rich ? String(rich.innerText || rich.textContent || "") : String(el.value || "");
+  const normalized = visibleText.replace(/\r\n?/g, "\n");
+  const lines = normalized.split("\n");
+  const container = document.createElement("div");
+  lines.forEach((line) => {
+    const row = document.createElement("div");
+    row.className = "print-link-line";
+    const fragment = createLinkifiedTextFragment(line, document);
+    if (fragment) row.appendChild(fragment);
+    else row.appendChild(document.createTextNode(line));
+    container.appendChild(row);
+  });
+  mirror.innerHTML = container.innerHTML;
+}
+
 function syncRichToTextarea(textarea) {
   const rich = richEditors.get(textarea);
   if (!rich) return;
@@ -289,6 +436,8 @@ function setupRichEditor(textarea) {
   rich.setAttribute("spellcheck", "false");
   rich.setAttribute("data-rich-name", textarea.name || "");
   rich.innerHTML = toEditableHtml(textarea.value || "");
+  normalizeContactAnchors(rich);
+  linkifyContactRichField(rich);
   textarea.classList.add("field-storage");
   textarea.setAttribute("aria-hidden", "true");
   textarea.tabIndex = -1;
@@ -297,11 +446,46 @@ function setupRichEditor(textarea) {
   syncRichToTextarea(textarea);
 
   const sync = () => {
+    if (isLinkifiedContactField(textarea.name)) linkifyContactRichField(rich);
     syncRichToTextarea(textarea);
     setStatus("not_saved");
   };
   rich.addEventListener("input", sync);
-  rich.addEventListener("blur", sync);
+  rich.addEventListener("blur", () => {
+    if (linkifyContactRichField(rich)) syncRichToTextarea(textarea);
+    setStatus("not_saved");
+  });
+  rich.addEventListener("click", (event) => {
+    if (!isLinkifiedContactField(textarea.name)) return;
+    const link = findAnchorFromEventTarget(event.target);
+    if (!link) return;
+    event.preventDefault();
+    openLinkFromAnchor(link);
+  });
+  rich.addEventListener("mousedown", (event) => {
+    if (!isLinkifiedContactField(textarea.name)) return;
+    const link = findAnchorFromEventTarget(event.target);
+    if (!link) return;
+    event.preventDefault();
+    openLinkFromAnchor(link);
+  });
+  rich.addEventListener("auxclick", (event) => {
+    if (!isLinkifiedContactField(textarea.name)) return;
+    const link = findAnchorFromEventTarget(event.target);
+    if (!link) return;
+    event.preventDefault();
+    openLinkFromAnchor(link);
+  });
+  rich.addEventListener("keydown", (event) => {
+    if (!isLinkifiedContactField(textarea.name)) return;
+    if (event.key !== "Enter") return;
+    const selection = window.getSelection();
+    const node = selection && selection.anchorNode ? selection.anchorNode : null;
+    const link = findAnchorFromEventTarget(node);
+    if (!link) return;
+    event.preventDefault();
+    openLinkFromAnchor(link);
+  });
   rich.addEventListener("mouseup", () => rememberRichSelectionRange());
   rich.addEventListener("keyup", () => rememberRichSelectionRange());
   rich.addEventListener("pointerup", () => rememberRichSelectionRange());
@@ -1053,6 +1237,7 @@ async function loadData(lang, company) {
       const rich = richEditors.get(el);
       if (rich) {
         rich.innerHTML = toEditableHtml(value);
+        linkifyContactRichField(rich);
         syncRichToTextarea(el);
       }
       if (!rich && el.classList.contains("list-style")) ensureBullets(el);
