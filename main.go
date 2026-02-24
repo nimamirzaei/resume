@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 )
 
 type api struct {
@@ -14,6 +15,12 @@ type api struct {
 }
 
 const sharedPhotoFile = "resume_photo.txt"
+
+type backupPayload struct {
+	Version   int               `json:"version"`
+	CreatedAt string            `json:"created_at"`
+	Files     map[string]string `json:"files"`
+}
 
 func newAPI() *api {
 	return &api{
@@ -144,6 +151,66 @@ func main() {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
+	api.mux.HandleFunc("/backup", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			files, err := listBackupFiles()
+			if err != nil {
+				http.Error(w, "failed to list backup files", http.StatusInternalServerError)
+				return
+			}
+			payload := backupPayload{
+				Version:   1,
+				CreatedAt: time.Now().UTC().Format(time.RFC3339),
+				Files:     map[string]string{},
+			}
+			for _, file := range files {
+				data, err := os.ReadFile(file)
+				if err != nil {
+					http.Error(w, "failed to read backup file", http.StatusInternalServerError)
+					return
+				}
+				payload.Files[file] = string(data)
+			}
+			out, err := json.MarshalIndent(payload, "", "  ")
+			if err != nil {
+				http.Error(w, "failed to encode backup", http.StatusInternalServerError)
+				return
+			}
+			fileName := "resume_backup_" + time.Now().UTC().Format("20060102_150405") + ".json"
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.Header().Set("Content-Disposition", `attachment; filename="`+fileName+`"`)
+			w.Write(out)
+		case http.MethodPost:
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, "failed to read body", http.StatusBadRequest)
+				return
+			}
+			var payload backupPayload
+			if err := json.Unmarshal(body, &payload); err != nil {
+				http.Error(w, "invalid backup json", http.StatusBadRequest)
+				return
+			}
+			if len(payload.Files) == 0 {
+				http.Error(w, "backup has no files", http.StatusBadRequest)
+				return
+			}
+			for fileName, content := range payload.Files {
+				if !isAllowedBackupFile(fileName) {
+					http.Error(w, "backup contains invalid filename", http.StatusBadRequest)
+					return
+				}
+				if err := os.WriteFile(fileName, []byte(content), 0644); err != nil {
+					http.Error(w, "failed to restore backup file", http.StatusInternalServerError)
+					return
+				}
+			}
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 
 	if err := http.ListenAndServe(":8080", api.mux); err != nil {
 		panic(err)
@@ -253,4 +320,33 @@ func sanitizedCompany(company string) string {
 		}
 	}
 	return strings.Trim(b.String(), "_")
+}
+
+func listBackupFiles() ([]string, error) {
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		return nil, err
+	}
+	files := make([]string, 0, 16)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if isAllowedBackupFile(name) {
+			files = append(files, name)
+		}
+	}
+	sort.Strings(files)
+	return files, nil
+}
+
+func isAllowedBackupFile(name string) bool {
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		return false
+	}
+	if name == sharedPhotoFile {
+		return true
+	}
+	return strings.HasPrefix(name, "resume") && strings.HasSuffix(name, ".json")
 }

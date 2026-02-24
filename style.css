@@ -322,12 +322,19 @@
         text-align: justify;
         text-justify: inter-word;
       }
+      #experience-list textarea.field.list-style,
+      textarea[name="skills"],
+      textarea[name="edu_text"],
+      textarea[name="languages"],
+      textarea[name="certifications_training"],
+      textarea[name="interests_hobbies"] {
+        font-family: "Inter", "Roboto", "Arial", "Helvetica", sans-serif;
+        font-size: 14px;
+        text-align: justify;
+        text-justify: inter-word;
+      }
       h3.field {
         text-align: left;
-      }
-      textarea[name="certifications_training"] {
-        text-align: left;
-        text-justify: auto;
       }
       .field.title {
         font-family: "Inter", "Roboto", "Arial", "Helvetica", sans-serif;

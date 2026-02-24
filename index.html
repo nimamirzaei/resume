@@ -149,6 +149,7 @@
                   <select id="profile-select"></select>
                 </label>
                 <button type="button" id="new-resume-btn" data-i18n="new_resume">New Resume</button>
+                <button type="button" id="lang-btn">Deutsch</button>
               </div>
             </div>
 
@@ -200,7 +201,13 @@
               <div class="control-group">
                 <button type="submit" id="save-btn" data-i18n="save">Save</button>
                 <button type="button" id="print-btn" data-i18n="print">Export as PDF (Text)</button>
-                <button type="button" id="lang-btn">Deutsch</button>
+                <button type="button" id="backup-download-btn" data-i18n="backup_download">
+                  Download Backup
+                </button>
+                <button type="button" id="backup-restore-btn" data-i18n="backup_restore">
+                  Restore Backup
+                </button>
+                <input type="file" id="backup-restore-input" accept="application/json" hidden />
               </div>
             </div>
             <span id="status">Not saved yet</span>
@@ -209,6 +216,6 @@
       </div>
     </form>
 
-    <script src="script.js?v=34"></script>
+    <script src="script.js?v=36"></script>
   </body>
 </html>

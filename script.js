@@ -15,6 +15,9 @@ const badgeEls = document.querySelectorAll(".badge");
 const photoInput = document.getElementById("photo-input");
 const photoClearBtn = document.getElementById("photo-clear-btn");
 const photoPreview = document.getElementById("photo-preview");
+const backupDownloadBtn = document.getElementById("backup-download-btn");
+const backupRestoreBtn = document.getElementById("backup-restore-btn");
+const backupRestoreInput = document.getElementById("backup-restore-input");
 const i18nNodes = document.querySelectorAll("[data-i18n]");
 
 const i18n = {
@@ -60,6 +63,12 @@ const i18n = {
     active_profile: "Profile",
     active_language: "Language",
     language_name: "English",
+    backup_download: "Download Backup",
+    backup_restore: "Restore Backup",
+    backup_saved: "Backup downloaded",
+    backup_failed: "Backup failed",
+    restore_done: "Backup restored",
+    restore_failed: "Restore failed",
   },
   de: {
     cover_letter: "ANSCHREIBEN",
@@ -103,6 +112,12 @@ const i18n = {
     active_profile: "Profil",
     active_language: "Sprache",
     language_name: "Deutsch",
+    backup_download: "Backup herunterladen",
+    backup_restore: "Backup wiederherstellen",
+    backup_saved: "Backup heruntergeladen",
+    backup_failed: "Backup fehlgeschlagen",
+    restore_done: "Backup wiederhergestellt",
+    restore_failed: "Wiederherstellung fehlgeschlagen",
   },
 };
 
@@ -206,9 +221,20 @@ function setupPrintMirrors() {
   getAutoTextareas().forEach((el) => ensurePrintMirror(el));
 }
 
+function normalizeListText(value) {
+  const decoded = decodeHtmlEntitiesRepeatedly(String(value || ""));
+  return decoded
+    .replace(/\r\n?/g, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(div|p|li)>\s*<(div|p|li)[^>]*>/gi, "\n")
+    .replace(/<(div|p|li)[^>]*>/gi, "")
+    .replace(/<\/(div|p|li)>/gi, "\n")
+    .replace(/<[^>]+>/g, "");
+}
+
 function ensureBullets(el) {
   if (richEditors.has(el)) return;
-  const lines = el.value.split("\n");
+  const lines = normalizeListText(el.value).split("\n");
   const next = lines.map((line) => {
     const trimmed = line.trimStart();
     if (trimmed === "") return "";
@@ -303,7 +329,7 @@ function setupTextarea(el) {
   if (initializedTextareas.has(el)) return;
   initializedTextareas.add(el);
 
-  setupRichEditor(el);
+  if (!el.classList.contains("list-style")) setupRichEditor(el);
   if (!richEditors.has(el) && el.classList.contains("list-style")) ensureBullets(el);
   autoSizeTextarea(el);
   ensurePrintMirror(el);
@@ -415,6 +441,15 @@ function selectClosestFontOption(fontFamily) {
   if (partial) styleFontSelect.value = partial.value;
 }
 
+function parseFontSizeValue(rawValue, fallback = 14) {
+  const normalized = String(rawValue || "")
+    .trim()
+    .replace(",", ".");
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.min(40, Math.max(8, parsed));
+}
+
 function getSelectionStyleElement() {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) return null;
@@ -457,7 +492,7 @@ function getSelectionStyleElement() {
 
 function refreshStyleEditorFromSelection() {
   if (!styleFontSelect || !styleSizeInput || !styleBoldInput || !styleColorInput) return;
-  const styleElement = getSelectionStyleElement();
+  const styleElement = isInRichEditingContext() ? getSelectionStyleElement() : null;
   if (styleElement) {
     const cs = window.getComputedStyle(styleElement);
     if (cs.fontFamily) selectClosestFontOption(cs.fontFamily);
@@ -636,10 +671,10 @@ function applySelectedStyle() {
   const rich = getRichContainerFromRange(range);
   if (!rich) return false;
 
-  const size = Number(styleSizeInput.value);
+  const size = parseFontSizeValue(styleSizeInput.value, 14);
   const span = document.createElement("span");
   span.style.fontFamily = styleFontSelect.value;
-  span.style.fontSize = `${Number.isFinite(size) && size > 0 ? size : 14}px`;
+  span.style.fontSize = `${size}px`;
   span.style.fontWeight = styleBoldInput.checked ? "700" : "400";
   span.style.color = styleColorInput.value || "#0e0f12";
   span.appendChild(range.extractContents());
@@ -661,6 +696,15 @@ function applySelectedStyle() {
   }
   setStatus("not_saved");
   return true;
+}
+
+function isInRichEditingContext() {
+  const active = document.activeElement;
+  if (active && active.closest && active.closest("[data-rich-name]")) return true;
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return false;
+  const range = selection.getRangeAt(0);
+  return !range.collapsed && !!getRichContainerFromRange(range);
 }
 
 function serializeStyleSettings() {
@@ -794,6 +838,46 @@ async function saveSharedPhoto() {
       body: JSON.stringify({ photo_data: photoValue }),
     });
     return res.ok;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function downloadBackup() {
+  try {
+    const res = await fetch("/backup");
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    const contentDisposition = res.headers.get("Content-Disposition") || "";
+    const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/i);
+    const fileName = fileNameMatch && fileNameMatch[1] ? fileNameMatch[1] : "resume_backup.json";
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function restoreBackupFile(file) {
+  if (!file) return false;
+  try {
+    const text = await file.text();
+    const res = await fetch("/backup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: text,
+    });
+    if (!res.ok) return false;
+    await loadProfileList(currentLang);
+    await loadData(currentLang, currentCompany);
+    return true;
   } catch (_) {
     return false;
   }
@@ -1124,17 +1208,17 @@ if (addExpBtn) {
 function autoApplyStyleFromControls() {
   if (!styleFontSelect || !styleSizeInput || !styleBoldInput || !styleColorInput) return;
 
-  const appliedToSelection = applySelectedStyle();
+  const appliedToSelection = isInRichEditingContext() ? applySelectedStyle() : false;
   if (appliedToSelection) {
     refreshStyleEditorFromSelection();
     return;
   }
 
   const key = activeStyleTargetKey;
-  const size = Number(styleSizeInput.value);
+  const size = parseFontSizeValue(styleSizeInput.value, 14);
   const nextStyle = {
     fontFamily: styleFontSelect.value || "",
-    fontSize: Number.isFinite(size) && size > 0 ? size : 14,
+    fontSize: size,
     bold: !!styleBoldInput.checked,
     color: /^#[0-9a-f]{6}$/i.test(styleColorInput.value) ? styleColorInput.value : "#0e0f12",
   };
@@ -1154,6 +1238,9 @@ if (styleFontSelect) {
 }
 
 if (styleSizeInput) {
+  styleSizeInput.addEventListener("input", () => {
+    autoApplyStyleFromControls();
+  });
   styleSizeInput.addEventListener("change", () => {
     autoApplyStyleFromControls();
   });
@@ -1190,6 +1277,28 @@ if (photoClearBtn) {
     setPhotoData("");
     if (photoInput) photoInput.value = "";
     setStatus("not_saved");
+  });
+}
+
+if (backupDownloadBtn) {
+  backupDownloadBtn.addEventListener("click", async () => {
+    const ok = await downloadBackup();
+    setStatus(ok ? "backup_saved" : "backup_failed");
+  });
+}
+
+if (backupRestoreBtn && backupRestoreInput) {
+  backupRestoreBtn.addEventListener("click", () => {
+    backupRestoreInput.click();
+  });
+}
+
+if (backupRestoreInput) {
+  backupRestoreInput.addEventListener("change", async () => {
+    const [file] = backupRestoreInput.files || [];
+    const ok = await restoreBackupFile(file);
+    backupRestoreInput.value = "";
+    setStatus(ok ? "restore_done" : "restore_failed");
   });
 }
 
