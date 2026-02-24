@@ -1,7 +1,9 @@
 {
   "certifications_training": "",
-  "interests_hobbies": "• Sport & Fitness (inkl. Teamsportarten) / Sports & Fitness (including team sports)\n• Natur- und Umweltschutz / Nature and environmental protection\n• Ehrenamtliches Engagement / Volunteering\n• Neue Technologien & IT-Infrastruktur / New technologies & IT infrastructure\n• Computernetzwerke / Computer networks\n• Teamarbeit / Teamwork\n• Podcasts & Fachlekture / Podcasts & professional reading",
   "contact": "",
+  "cover_date": "",
+  "cover_recipient": "",
+  "cover_text": "",
   "edu_text": "",
   "exp1_bullets": "",
   "exp1_meta": "",
@@ -15,8 +17,10 @@
   "exp4_bullets": "",
   "exp4_meta": "",
   "exp4_title": "",
+  "interests_hobbies": "",
   "languages": "",
   "name": "",
+  "photo_data": "",
   "role": "",
   "skills": "",
   "summary": ""
