@@ -21,6 +21,23 @@
       .resume-form {
         display: block;
       }
+      .editor-layout {
+        width: fit-content;
+        max-width: 100%;
+        margin: 0 auto;
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+      }
+      .editor-canvas {
+        flex: 0 0 auto;
+      }
+      .control-sidebar {
+        width: 330px;
+        position: sticky;
+        top: 16px;
+        align-self: flex-start;
+      }
       .page {
         width: 210mm;
         min-height: 297mm;
@@ -285,6 +302,18 @@
         word-spacing: normal;
         white-space: normal;
       }
+      textarea.field.field-storage {
+        display: none !important;
+      }
+      .rich-field {
+        min-height: 84px;
+        outline: none;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .rich-field.inline.role {
+        min-height: 40px;
+      }
       .print-mirror {
         display: none;
       }
@@ -337,20 +366,85 @@
       }
       .controls {
         display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-        margin-top: 18px;
-        margin-bottom: 24mm;
-        width: 210mm;
-        margin-left: auto;
-        margin-right: auto;
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+        justify-content: flex-start;
+        margin-top: 0;
+        margin-bottom: 0;
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        padding: 12px;
+        border: var(--divider-thin) solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
         font-family: "Inter", "Roboto", "Arial", "Helvetica", sans-serif;
+      }
+      .command-bar {
+        border: var(--divider-thin) solid var(--line);
+        border-radius: 8px;
+        background: #fff8ef;
+        padding: 10px;
+      }
+      .command-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        letter-spacing: 0.3px;
+      }
+      .control-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-start;
       }
       .profile-list-control {
         display: flex;
         align-items: center;
         gap: 8px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .style-target {
+        font-size: 13px;
+        color: var(--muted);
+        padding: 8px 10px;
+        border: var(--divider-thin) solid var(--line);
+        border-radius: 6px;
+        background: #fff8ef;
+      }
+      .style-control {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .style-control select,
+      .style-control input {
+        padding: 8px 10px;
+        border: var(--divider-thin) solid var(--line);
+        border-radius: 6px;
+        background: #fff8ef;
+        color: var(--ink);
+      }
+      .style-size-control input {
+        width: 84px;
+      }
+      .style-color-control input {
+        width: 52px;
+        padding: 2px;
+        height: 34px;
+      }
+      .style-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 6px;
         font-size: 13px;
         color: var(--muted);
       }
@@ -385,8 +479,18 @@
       #status {
         color: var(--muted);
         font-size: 13px;
+        text-align: right;
       }
       @media (max-width: 780px) {
+        .editor-layout {
+          display: block;
+          width: auto;
+        }
+        .control-sidebar {
+          width: auto;
+          position: static;
+          max-width: none;
+        }
         .page {
           width: auto;
           min-height: auto;
@@ -396,6 +500,9 @@
         .controls {
           width: auto;
           margin: 18px;
+          margin-top: 12px;
+          margin-bottom: 18px;
+          box-shadow: none;
         }
         .cover-grid {
           grid-template-columns: 1fr;
@@ -439,12 +546,6 @@
           background: #fff;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
-          font-size: 11pt;
-          font-family: "Inter", "Roboto", "Arial", "Helvetica", sans-serif !important;
-        }
-        .page,
-        .page * {
-          font-family: "Inter", "Roboto", "Arial", "Helvetica", sans-serif !important;
         }
         .page {
           width: auto;
@@ -465,6 +566,13 @@
         }
         .controls {
           display: none !important;
+        }
+        .control-sidebar {
+          display: none !important;
+        }
+        .editor-layout {
+          display: block;
+          width: auto;
         }
         button {
           display: none !important;
@@ -548,9 +656,12 @@
           border: 0;
           background: transparent;
           padding: 0;
-          line-height: 1.35;
+          line-height: inherit;
         }
         textarea.field {
+          display: none !important;
+        }
+        .rich-field {
           display: none !important;
         }
         .print-mirror {
@@ -558,7 +669,7 @@
           border: 0 !important;
           background: transparent !important;
           padding: 0 !important;
-          line-height: 1.35;
+          line-height: inherit;
           white-space: pre-wrap !important;
           overflow-wrap: anywhere;
           word-break: normal;
@@ -587,15 +698,6 @@
         textarea.field {
           -webkit-appearance: none;
           appearance: none;
-        }
-        h1 {
-          font-size: 38px;
-        }
-        h3 {
-          font-size: 16px;
-        }
-        .summary {
-          font-size: 16px;
         }
       }
 

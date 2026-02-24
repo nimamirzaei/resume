@@ -5,6 +5,12 @@ const profileSelect = document.getElementById("profile-select");
 const newResumeBtn = document.getElementById("new-resume-btn");
 const addExpBtn = document.getElementById("add-exp-btn");
 const experienceList = document.getElementById("experience-list");
+const styleTargetLabel = document.getElementById("style-target-label");
+const styleLiveInfo = document.getElementById("style-live-info");
+const styleFontSelect = document.getElementById("style-font");
+const styleSizeInput = document.getElementById("style-size");
+const styleColorInput = document.getElementById("style-color");
+const styleBoldInput = document.getElementById("style-bold");
 const badgeEls = document.querySelectorAll(".badge");
 const photoInput = document.getElementById("photo-input");
 const photoClearBtn = document.getElementById("photo-clear-btn");
@@ -41,6 +47,14 @@ const i18n = {
     lang_button: "Deutsch",
     company: "Company profile",
     profile_list: "Saved profiles",
+    style_font: "Font",
+    style_size: "Size",
+    style_color: "Color",
+    style_bold: "Bold",
+    style_selected: "Selected",
+    style_selected_none: "Selected: none",
+    style_live_none: "Size: -",
+    style_live: "Size",
     load_profile: "Load Profile",
     company_placeholder: "default",
     active_profile: "Profile",
@@ -76,6 +90,14 @@ const i18n = {
     lang_button: "English",
     company: "Firmenprofil",
     profile_list: "Gespeicherte Profile",
+    style_font: "Schrift",
+    style_size: "Größe",
+    style_color: "Farbe",
+    style_bold: "Fett",
+    style_selected: "Ausgewählt",
+    style_selected_none: "Ausgewählt: keiner",
+    style_live_none: "Größe: -",
+    style_live: "Größe",
     load_profile: "Profil laden",
     company_placeholder: "default",
     active_profile: "Profil",
@@ -87,8 +109,12 @@ const i18n = {
 let currentLang = "de";
 let currentCompany = "default";
 const printMirrors = new WeakMap();
+const richEditors = new WeakMap();
 const initializedTextareas = new WeakSet();
 const initializedEditableFields = new WeakSet();
+let styleSettings = {};
+let activeStyleTargetKey = "";
+let lastRichSelectionRange = null;
 
 function getAutoTextareas() {
   return form.querySelectorAll("textarea.field");
@@ -123,6 +149,8 @@ function syncProfileSelectValue() {
 }
 
 function autoSizeTextarea(el) {
+  const rich = richEditors.get(el);
+  if (rich) return;
   if (el.classList.contains("role")) {
     el.style.height = "40px";
     return;
@@ -132,6 +160,8 @@ function autoSizeTextarea(el) {
 }
 
 function autoSizeTextareaForPrint(el) {
+  const rich = richEditors.get(el);
+  if (rich) return;
   el.style.maxHeight = "none";
   el.style.overflow = "hidden";
   el.style.height = "auto";
@@ -145,7 +175,13 @@ function autoSizeAllForPrint() {
 function syncPrintMirror(el) {
   const mirror = printMirrors.get(el);
   if (!mirror) return;
+  const rich = richEditors.get(el);
+  if (rich) {
+    mirror.innerHTML = rich.innerHTML || "";
+    return;
+  }
   mirror.textContent = el.value || "";
+  applyStyleToElementByKey(el.name, mirror);
 }
 
 function syncAllPrintMirrors() {
@@ -162,6 +198,7 @@ function ensurePrintMirror(el) {
   mirror.setAttribute("data-print-for", el.name);
   el.insertAdjacentElement("afterend", mirror);
   printMirrors.set(el, mirror);
+  applyStyleToElementByKey(el.name, mirror);
   syncPrintMirror(el);
 }
 
@@ -170,6 +207,7 @@ function setupPrintMirrors() {
 }
 
 function ensureBullets(el) {
+  if (richEditors.has(el)) return;
   const lines = el.value.split("\n");
   const next = lines.map((line) => {
     const trimmed = line.trimStart();
@@ -181,6 +219,66 @@ function ensureBullets(el) {
   if (typeof caret === "number") {
     el.selectionStart = el.selectionEnd = caret;
   }
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function decodeHtmlEntitiesRepeatedly(value) {
+  let current = String(value || "");
+  for (let i = 0; i < 5; i += 1) {
+    const textarea = document.createElement("textarea");
+    textarea.innerHTML = current;
+    const decoded = textarea.value;
+    if (decoded === current) break;
+    current = decoded;
+  }
+  return current;
+}
+
+function toEditableHtml(value) {
+  const raw = String(value || "");
+  if (/<[a-z][\s\S]*>/i.test(raw)) return raw;
+  const normalized = decodeHtmlEntitiesRepeatedly(raw);
+  return escapeHtml(normalized).replace(/\n/g, "<br>");
+}
+
+function syncRichToTextarea(textarea) {
+  const rich = richEditors.get(textarea);
+  if (!rich) return;
+  const html = rich.innerHTML || "";
+  textarea.value = /<[a-z][\s\S]*>/i.test(html) ? html : rich.textContent || "";
+  syncPrintMirror(textarea);
+}
+
+function setupRichEditor(textarea) {
+  if (richEditors.has(textarea)) return;
+  const rich = document.createElement("div");
+  rich.className = `${textarea.className} rich-field`;
+  rich.setAttribute("contenteditable", "true");
+  rich.setAttribute("spellcheck", "false");
+  rich.setAttribute("data-rich-name", textarea.name || "");
+  rich.innerHTML = toEditableHtml(textarea.value || "");
+  textarea.classList.add("field-storage");
+  textarea.setAttribute("aria-hidden", "true");
+  textarea.tabIndex = -1;
+  textarea.insertAdjacentElement("afterend", rich);
+  richEditors.set(textarea, rich);
+  syncRichToTextarea(textarea);
+
+  const sync = () => {
+    syncRichToTextarea(textarea);
+    setStatus("not_saved");
+  };
+  rich.addEventListener("input", sync);
+  rich.addEventListener("blur", sync);
+  rich.addEventListener("mouseup", () => rememberRichSelectionRange());
+  rich.addEventListener("keyup", () => rememberRichSelectionRange());
+  rich.addEventListener("pointerup", () => rememberRichSelectionRange());
 }
 
 function syncStaticField(name, value) {
@@ -205,10 +303,12 @@ function setupTextarea(el) {
   if (initializedTextareas.has(el)) return;
   initializedTextareas.add(el);
 
-  if (el.classList.contains("list-style")) ensureBullets(el);
+  setupRichEditor(el);
+  if (!richEditors.has(el) && el.classList.contains("list-style")) ensureBullets(el);
   autoSizeTextarea(el);
   ensurePrintMirror(el);
 
+  if (richEditors.has(el)) return;
   el.addEventListener("input", () => {
     if (el.classList.contains("list-style")) ensureBullets(el);
     autoSizeTextarea(el);
@@ -221,11 +321,384 @@ function setupDynamicInputs() {
   setupExperienceRemoveButtons();
   getStaticFields().forEach((el) => setupEditableField(el));
   getAutoTextareas().forEach((el) => setupTextarea(el));
+  applyAllStyleSettings();
+  ensureActiveStyleTarget();
+}
+
+function listStylableKeys() {
+  const keys = new Set();
+  form.querySelectorAll("textarea.field[name]").forEach((el) => {
+    if (!el.name) return;
+    keys.add(el.name);
+  });
+  form.querySelectorAll("[data-name]").forEach((el) => {
+    const key = el.getAttribute("data-name");
+    if (key) keys.add(key);
+  });
+  return Array.from(keys).sort((a, b) => a.localeCompare(b));
+}
+
+function getStylableElementsByKey(key) {
+  const byName = Array.from(form.querySelectorAll(`[name="${CSS.escape(key)}"]`)).filter(
+    (el) => !(el.tagName === "INPUT" && el.type === "hidden")
+  );
+  const byDataName = Array.from(form.querySelectorAll(`[data-name="${CSS.escape(key)}"]`));
+  const byRichName = Array.from(form.querySelectorAll(`[data-rich-name="${CSS.escape(key)}"]`));
+  const mirrors = Array.from(form.querySelectorAll(`[data-print-for="${CSS.escape(key)}"]`));
+  return [...new Set([...byName, ...byDataName, ...byRichName, ...mirrors])];
+}
+
+function applyStyleToElementByKey(key, el) {
+  const style = styleSettings[key];
+  if (!style) return;
+  if (style.fontFamily) el.style.fontFamily = style.fontFamily;
+  if (style.fontSize) el.style.fontSize = `${style.fontSize}px`;
+  el.style.fontWeight = style.bold ? "700" : "400";
+  if (style.color) el.style.color = style.color;
+}
+
+function applyStyleToKey(key) {
+  const elements = getStylableElementsByKey(key);
+  elements.forEach((el) => applyStyleToElementByKey(key, el));
+}
+
+function applyAllStyleSettings() {
+  Object.keys(styleSettings).forEach((key) => applyStyleToKey(key));
+}
+
+function clearAllStyleSettingsFromDom() {
+  listStylableKeys().forEach((key) => {
+    getStylableElementsByKey(key).forEach((el) => {
+      el.style.removeProperty("font-family");
+      el.style.removeProperty("font-size");
+      el.style.removeProperty("font-weight");
+      el.style.removeProperty("color");
+    });
+  });
+}
+
+function normalizeFontFamilyValue(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replaceAll('"', "")
+    .replaceAll("'", "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function firstFontToken(value) {
+  const normalized = normalizeFontFamilyValue(value);
+  const first = normalized.split(",")[0] || "";
+  return first.trim();
+}
+
+function selectClosestFontOption(fontFamily) {
+  if (!styleFontSelect) return;
+  const normalized = normalizeFontFamilyValue(fontFamily);
+  const first = firstFontToken(fontFamily);
+  const options = Array.from(styleFontSelect.options);
+  const exact = options.find((option) => normalizeFontFamilyValue(option.value) === normalized);
+  if (exact) {
+    styleFontSelect.value = exact.value;
+    return;
+  }
+  const partial = options.find((option) => {
+    const opt = normalizeFontFamilyValue(option.value);
+    const optFirst = firstFontToken(option.value);
+    return (
+      opt.includes(normalized) ||
+      normalized.includes(optFirst) ||
+      opt.includes(first) ||
+      first.includes(optFirst)
+    );
+  });
+  if (partial) styleFontSelect.value = partial.value;
+}
+
+function getSelectionStyleElement() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+
+  const nodeToElement = (node, offset = 0) => {
+    if (!node) return null;
+    if (node.nodeType === Node.TEXT_NODE) return node.parentElement;
+    if (!(node instanceof Element)) return null;
+    if (node.childNodes && node.childNodes.length > 0) {
+      const clamped = Math.max(0, Math.min(offset, node.childNodes.length - 1));
+      const child = node.childNodes[clamped];
+      if (child) {
+        if (child.nodeType === Node.TEXT_NODE) return child.parentElement;
+        if (child instanceof Element) return child;
+      }
+    }
+    return node;
+  };
+
+  const candidates = [
+    nodeToElement(selection.anchorNode, selection.anchorOffset || 0),
+    nodeToElement(selection.focusNode, selection.focusOffset || 0),
+    nodeToElement(range.startContainer, range.startOffset || 0),
+    nodeToElement(range.endContainer, range.endOffset || 0),
+    nodeToElement(range.commonAncestorContainer, 0),
+  ];
+
+  for (const el of candidates) {
+    if (!el || !form.contains(el)) continue;
+    const richScope = el.closest("[data-rich-name]");
+    if (richScope) return el;
+  }
+
+  for (const el of candidates) {
+    if (el && form.contains(el)) return el;
+  }
+  return null;
+}
+
+function refreshStyleEditorFromSelection() {
+  if (!styleFontSelect || !styleSizeInput || !styleBoldInput || !styleColorInput) return;
+  const styleElement = getSelectionStyleElement();
+  if (styleElement) {
+    const cs = window.getComputedStyle(styleElement);
+    if (cs.fontFamily) selectClosestFontOption(cs.fontFamily);
+    const size = Number.parseFloat(cs.fontSize || "14");
+    if (Number.isFinite(size)) {
+      const rounded = Math.round(size * 10) / 10;
+      styleSizeInput.value = String(rounded);
+      const dict = i18n[currentLang] || i18n.en;
+      if (styleLiveInfo) styleLiveInfo.textContent = `${dict.style_live}: ${rounded}px`;
+    }
+    const rawWeight = String(cs.fontWeight || "400").toLowerCase();
+    const parsedWeight = Number.parseInt(rawWeight, 10);
+    styleBoldInput.checked =
+      rawWeight === "bold" || (Number.isFinite(parsedWeight) ? parsedWeight >= 600 : false);
+    const colorHex = (() => {
+      const raw = String(cs.color || "");
+      const m = raw.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+      if (!m) return "";
+      const toHex = (n) => Number(n).toString(16).padStart(2, "0");
+      return `#${toHex(m[1])}${toHex(m[2])}${toHex(m[3])}`;
+    })();
+    if (/^#[0-9a-f]{6}$/i.test(colorHex)) styleColorInput.value = colorHex;
+    return;
+  }
+  const key = activeStyleTargetKey;
+  if (!key) return;
+  const style = styleSettings[key];
+  if (!style) return;
+  if (style.fontFamily) styleFontSelect.value = style.fontFamily;
+  if (style.fontSize) styleSizeInput.value = String(style.fontSize);
+  styleBoldInput.checked = !!style.bold;
+  if (style.color) styleColorInput.value = style.color;
+  const dict = i18n[currentLang] || i18n.en;
+  if (styleLiveInfo) {
+    styleLiveInfo.textContent = style.fontSize
+      ? `${dict.style_live}: ${style.fontSize}px`
+      : dict.style_live_none;
+  }
+}
+
+function updateStyleTargetLabel() {
+  if (!styleTargetLabel) return;
+  const dict = i18n[currentLang] || i18n.en;
+  if (!activeStyleTargetKey) {
+    styleTargetLabel.textContent = dict.style_selected_none;
+    return;
+  }
+  styleTargetLabel.textContent = `${dict.style_selected}: ${activeStyleTargetKey}`;
+}
+
+function updateLiveStyleEmptyLabel() {
+  if (!styleLiveInfo) return;
+  const dict = i18n[currentLang] || i18n.en;
+  styleLiveInfo.textContent = dict.style_live_none;
+}
+
+function getStylableKeyFromNode(node) {
+  if (!node || !(node instanceof Element)) return "";
+  const richNode = node.closest("[data-rich-name]");
+  if (richNode) return richNode.getAttribute("data-rich-name") || "";
+  const dataNode = node.closest("[data-name]");
+  if (dataNode) return dataNode.getAttribute("data-name") || "";
+  const namedNode = node.closest("[name]");
+  if (!namedNode) return "";
+  if (namedNode.tagName === "INPUT" && namedNode.type === "hidden") return "";
+  if (!namedNode.classList.contains("field")) return "";
+  return namedNode.name || "";
+}
+
+function setActiveStyleTargetKey(key) {
+  activeStyleTargetKey = key || "";
+  refreshStyleEditorFromSelection();
+  updateStyleTargetLabel();
+}
+
+function ensureActiveStyleTarget() {
+  const keys = listStylableKeys();
+  if (!activeStyleTargetKey || !keys.includes(activeStyleTargetKey)) {
+    setActiveStyleTargetKey(keys[0] || "");
+    return;
+  }
+  updateStyleTargetLabel();
+}
+
+function detectActiveStyleTargetFromSelection() {
+  const selection = document.getSelection();
+  const anchor = selection && selection.anchorNode ? selection.anchorNode : null;
+  if (anchor && form.contains(anchor)) {
+    const fromSelection = getStylableKeyFromNode(
+      anchor.nodeType === Node.TEXT_NODE ? anchor.parentElement : anchor
+    );
+    if (fromSelection) {
+      setActiveStyleTargetKey(fromSelection);
+      return;
+    }
+  }
+  const active = document.activeElement;
+  if (active && form.contains(active)) {
+    const fromActive = getStylableKeyFromNode(active);
+    if (fromActive) setActiveStyleTargetKey(fromActive);
+    else updateLiveStyleEmptyLabel();
+    return;
+  }
+  updateLiveStyleEmptyLabel();
+}
+
+function getRichContainerFromRange(range) {
+  if (!range) return null;
+  const node =
+    range.commonAncestorContainer && range.commonAncestorContainer.nodeType === Node.TEXT_NODE
+      ? range.commonAncestorContainer.parentElement
+      : range.commonAncestorContainer;
+  if (!node || !node.closest) return null;
+  return node.closest("[data-rich-name]");
+}
+
+function rememberRichSelectionRange() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+  const range = selection.getRangeAt(0);
+  if (range.collapsed) return;
+  if (!range.startContainer || !range.endContainer) return;
+  if (!range.startContainer.isConnected || !range.endContainer.isConnected) return;
+  const rich = getRichContainerFromRange(range);
+  if (!rich) return;
+  lastRichSelectionRange = range.cloneRange();
+}
+
+function initStyleTargetTracking() {
+  const sync = () => {
+    window.requestAnimationFrame(() => {
+      rememberRichSelectionRange();
+      detectActiveStyleTargetFromSelection();
+    });
+  };
+  form.addEventListener("focusin", sync);
+  form.addEventListener("mouseup", sync);
+  form.addEventListener("keyup", sync);
+  form.addEventListener("pointerup", sync);
+  document.addEventListener("selectionchange", sync);
+}
+
+function refreshStyleTargetOptions() {
+  ensureActiveStyleTarget();
+  refreshStyleEditorFromSelection();
+}
+
+function applySelectedStyle() {
+  if (!styleFontSelect || !styleSizeInput || !styleBoldInput || !styleColorInput) return;
+  const selection = window.getSelection();
+  let range = null;
+  if (selection && selection.rangeCount > 0) {
+    const current = selection.getRangeAt(0);
+    if (!current.collapsed && getRichContainerFromRange(current)) {
+      range = current;
+    }
+  }
+  if (!range && lastRichSelectionRange && !lastRichSelectionRange.collapsed) {
+    if (
+      !lastRichSelectionRange.startContainer ||
+      !lastRichSelectionRange.endContainer ||
+      !lastRichSelectionRange.startContainer.isConnected ||
+      !lastRichSelectionRange.endContainer.isConnected
+    ) {
+      lastRichSelectionRange = null;
+      return false;
+    }
+    if (selection) {
+      selection.removeAllRanges();
+      selection.addRange(lastRichSelectionRange);
+    }
+    range = lastRichSelectionRange;
+  }
+  if (!range) return false;
+  if (range.collapsed) return false;
+  const rich = getRichContainerFromRange(range);
+  if (!rich) return false;
+
+  const size = Number(styleSizeInput.value);
+  const span = document.createElement("span");
+  span.style.fontFamily = styleFontSelect.value;
+  span.style.fontSize = `${Number.isFinite(size) && size > 0 ? size : 14}px`;
+  span.style.fontWeight = styleBoldInput.checked ? "700" : "400";
+  span.style.color = styleColorInput.value || "#0e0f12";
+  span.appendChild(range.extractContents());
+  range.insertNode(span);
+  if (selection) {
+    selection.removeAllRanges();
+    const nextRange = document.createRange();
+    nextRange.selectNodeContents(span);
+    selection.addRange(nextRange);
+    lastRichSelectionRange = nextRange.cloneRange();
+  }
+
+  const key = rich.getAttribute("data-rich-name") || "";
+  if (key) {
+    const textarea = form.elements[key];
+    if (textarea && textarea.tagName === "TEXTAREA") {
+      syncRichToTextarea(textarea);
+    }
+  }
+  setStatus("not_saved");
+  return true;
+}
+
+function serializeStyleSettings() {
+  try {
+    return JSON.stringify(styleSettings);
+  } catch (_) {
+    return "{}";
+  }
+}
+
+function parseStyleSettings(raw) {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    const output = {};
+    Object.entries(parsed).forEach(([key, value]) => {
+      if (!value || typeof value !== "object") return;
+      const fontFamily = typeof value.fontFamily === "string" ? value.fontFamily : "";
+      const fontSize = Number(value.fontSize);
+      const color = typeof value.color === "string" ? value.color : "";
+      output[key] = {
+        fontFamily,
+        fontSize: Number.isFinite(fontSize) && fontSize > 0 ? fontSize : 14,
+        bold: !!value.bold,
+        color: /^#[0-9a-f]{6}$/i.test(color) ? color : "",
+      };
+    });
+    return output;
+  } catch (_) {
+    return {};
+  }
 }
 
 function removeExperienceSection(section) {
   if (!section) return;
   section.remove();
+  refreshStyleTargetOptions();
   setStatus("not_saved");
 }
 
@@ -261,6 +734,9 @@ function applyUiLanguage(lang) {
   langBtn.textContent = dict.lang_button;
   document.documentElement.lang = lang;
   localizeExperienceRemoveButtons();
+  updateStyleTargetLabel();
+  updateLiveStyleEmptyLabel();
+  refreshStyleEditorFromSelection();
   renderBadge();
 }
 
@@ -291,6 +767,36 @@ function setPhotoData(value) {
   photoPreview.removeAttribute("src");
   photoPreview.style.display = "none";
   if (photoClearBtn) photoClearBtn.disabled = true;
+}
+
+async function loadSharedPhoto() {
+  try {
+    const res = await fetch("/photo");
+    if (!res.ok) return false;
+    if (res.status === 204) {
+      setPhotoData("");
+      return true;
+    }
+    const data = await res.text();
+    setPhotoData(data);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function saveSharedPhoto() {
+  const photoValue = form.elements.photo_data ? String(form.elements.photo_data.value || "") : "";
+  try {
+    const res = await fetch("/photo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ photo_data: photoValue }),
+    });
+    return res.ok;
+  } catch (_) {
+    return false;
+  }
 }
 
 function nextExperienceIndex() {
@@ -405,6 +911,8 @@ if (printMedia && typeof printMedia.addEventListener === "function") {
 
 function clearFormFields() {
   removeDynamicExperienceSections();
+  styleSettings = {};
+  clearAllStyleSettingsFromDom();
 
   Array.from(form.elements).forEach((el) => {
     if (!el.name) return;
@@ -415,7 +923,9 @@ function clearFormFields() {
     }
     if ("value" in el) {
       el.value = "";
-      if (el.classList && el.classList.contains("list-style")) ensureBullets(el);
+      const rich = richEditors.get(el);
+      if (rich) rich.innerHTML = "";
+      if (!rich && el.classList && el.classList.contains("list-style")) ensureBullets(el);
       if (el.tagName === "TEXTAREA") {
         autoSizeTextarea(el);
         syncPrintMirror(el);
@@ -423,7 +933,6 @@ function clearFormFields() {
     }
   });
 
-  setPhotoData("");
   setupDynamicInputs();
 }
 
@@ -434,6 +943,7 @@ async function loadData(lang, company) {
   if (!res.ok) return;
   if (res.status === 204) {
     clearFormFields();
+    await loadSharedPhoto();
     setStatus("profile_empty");
     return false;
   }
@@ -448,18 +958,20 @@ async function loadData(lang, company) {
     data.cover_text = legacyCover;
   }
   clearFormFields();
+  styleSettings = parseStyleSettings(data.__style_settings);
   ensureExperienceSectionsForData(data);
 
-  setPhotoData("");
   for (const [key, value] of Object.entries(data)) {
-    if (key === "photo_data") {
-      setPhotoData(value);
-      continue;
-    }
+    if (key === "photo_data") continue;
     const el = form.elements[key];
     if (el) {
       el.value = value;
-      if (el.classList.contains("list-style")) ensureBullets(el);
+      const rich = richEditors.get(el);
+      if (rich) {
+        rich.innerHTML = toEditableHtml(value);
+        syncRichToTextarea(el);
+      }
+      if (!rich && el.classList.contains("list-style")) ensureBullets(el);
       if (el.tagName === "TEXTAREA") {
         autoSizeTextarea(el);
         syncPrintMirror(el);
@@ -469,6 +981,9 @@ async function loadData(lang, company) {
       syncStaticField(key, String(value));
     }
   }
+  applyAllStyleSettings();
+  refreshStyleTargetOptions();
+  await loadSharedPhoto();
   setStatus("loaded");
   return true;
 }
@@ -519,8 +1034,10 @@ function emptyPayload() {
   const payload = {};
   Array.from(form.elements).forEach((el) => {
     if (!el.name) return;
+    if (el.name === "photo_data") return;
     payload[el.name] = "";
   });
+  payload.__style_settings = "{}";
   return payload;
 }
 
@@ -559,8 +1076,10 @@ form.addEventListener("submit", async (e) => {
 
   const payload = {};
   new FormData(form).forEach((value, key) => {
+    if (key === "photo_data") return;
     payload[key] = String(value);
   });
+  payload.__style_settings = serializeStyleSettings();
   const res = await fetch(
     `/data?lang=${encodeURIComponent(currentLang)}&company=${encodeURIComponent(currentCompany)}`,
     {
@@ -570,8 +1089,10 @@ form.addEventListener("submit", async (e) => {
     }
   );
 
-  setStatus(res.ok ? "saved" : "save_failed");
-  if (res.ok) await loadProfileList(currentLang);
+  const photoSaved = await saveSharedPhoto();
+  const ok = res.ok && photoSaved;
+  setStatus(ok ? "saved" : "save_failed");
+  if (ok) await loadProfileList(currentLang);
 });
 
 langBtn.addEventListener("click", async () => {
@@ -595,7 +1116,58 @@ if (addExpBtn) {
   addExpBtn.addEventListener("click", () => {
     const index = nextExperienceIndex();
     createExperienceSection(index);
+    refreshStyleTargetOptions();
     setStatus("not_saved");
+  });
+}
+
+function autoApplyStyleFromControls() {
+  if (!styleFontSelect || !styleSizeInput || !styleBoldInput || !styleColorInput) return;
+
+  const appliedToSelection = applySelectedStyle();
+  if (appliedToSelection) {
+    refreshStyleEditorFromSelection();
+    return;
+  }
+
+  const key = activeStyleTargetKey;
+  const size = Number(styleSizeInput.value);
+  const nextStyle = {
+    fontFamily: styleFontSelect.value || "",
+    fontSize: Number.isFinite(size) && size > 0 ? size : 14,
+    bold: !!styleBoldInput.checked,
+    color: /^#[0-9a-f]{6}$/i.test(styleColorInput.value) ? styleColorInput.value : "#0e0f12",
+  };
+
+  if (key) {
+    styleSettings[key] = nextStyle;
+    applyStyleToKey(key);
+    setStatus("not_saved");
+  }
+  refreshStyleEditorFromSelection();
+}
+
+if (styleFontSelect) {
+  styleFontSelect.addEventListener("change", () => {
+    autoApplyStyleFromControls();
+  });
+}
+
+if (styleSizeInput) {
+  styleSizeInput.addEventListener("change", () => {
+    autoApplyStyleFromControls();
+  });
+}
+
+if (styleColorInput) {
+  styleColorInput.addEventListener("change", () => {
+    autoApplyStyleFromControls();
+  });
+}
+
+if (styleBoldInput) {
+  styleBoldInput.addEventListener("change", () => {
+    autoApplyStyleFromControls();
   });
 }
 
@@ -625,11 +1197,13 @@ document.getElementById("print-btn").addEventListener("click", () => window.prin
 
 currentCompany = normalizeCompanyName(localStorage.getItem("resume_company_profile") || "default");
 setupDynamicInputs();
+initStyleTargetTracking();
+refreshStyleTargetOptions();
 applyUiLanguage(currentLang);
 setStatus("not_saved");
 renderBadge();
 setupPrintMirrors();
-setPhotoData(form.elements.photo_data ? form.elements.photo_data.value : "");
+loadSharedPhoto().catch(() => {});
 loadProfileList(currentLang)
   .catch(() => {})
   .then(() => loadData(currentLang, currentCompany));

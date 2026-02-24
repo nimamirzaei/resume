@@ -13,6 +13,8 @@ type api struct {
 	mux *http.ServeMux
 }
 
+const sharedPhotoFile = "resume_photo.txt"
+
 func newAPI() *api {
 	return &api{
 		mux: http.NewServeMux(),
@@ -94,6 +96,53 @@ func main() {
 		_ = json.NewEncoder(w).Encode(map[string][]string{
 			"profiles": profiles,
 		})
+	})
+	api.mux.HandleFunc("/photo", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			data, err := os.ReadFile(sharedPhotoFile)
+			if err != nil {
+				if os.IsNotExist(err) {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+				http.Error(w, "failed to read photo", http.StatusInternalServerError)
+				return
+			}
+			if len(data) == 0 {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			w.Write(data)
+		case http.MethodPost:
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, "failed to read body", http.StatusBadRequest)
+				return
+			}
+			var payload map[string]string
+			if err := json.Unmarshal(body, &payload); err != nil {
+				http.Error(w, "invalid json", http.StatusBadRequest)
+				return
+			}
+			photo := strings.TrimSpace(payload["photo_data"])
+			if photo == "" {
+				if err := os.Remove(sharedPhotoFile); err != nil && !os.IsNotExist(err) {
+					http.Error(w, "failed to clear photo", http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			if err := os.WriteFile(sharedPhotoFile, []byte(photo), 0644); err != nil {
+				http.Error(w, "failed to save photo", http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
 	})
 
 	if err := http.ListenAndServe(":8080", api.mux); err != nil {

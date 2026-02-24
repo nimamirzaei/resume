@@ -4,156 +4,211 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Resume Editor</title>
-    <link rel="stylesheet" href="style.css?v=13">
+    <link rel="stylesheet" href="style.css?v=18">
   </head>
   <body>
     <form class="resume-form" id="resume-form">
-      <section class="page cover-page">
-        <div class="badge cover-badge"></div>
+      <div class="editor-layout">
+        <div class="editor-canvas">
+          <section class="page cover-page">
+            <div class="badge cover-badge"></div>
 
-        <div class="cover-grid">
-          <div>
-            <textarea class="field cover-field" name="cover_recipient" rows="5"></textarea>
-          </div>
-          <div>
-            <textarea class="field cover-field cover-date" name="cover_date" rows="1"></textarea>
-          </div>
-        </div>
-
-        <textarea class="field cover-text" name="cover_text"></textarea>
-      </section>
-
-      <section class="page resume-page">
-        <div class="badge"></div>
-        <div></div>
-        <section class="mast">
-          <div class="mast-photo">
-            <div class="photo-slot">
-              <img id="photo-preview" alt="Resume photo" />
-            </div>
-          </div>
-          <div class="mast-left">
-            <h3 class="field title inline" data-name="name"></h3>
-            <input type="hidden" name="name" value="" />
-            <textarea class="field inline role" name="role" rows="1"></textarea>
-          </div>
-          <div class="mast-right">
-            <div class="contact">
-              <textarea class="field" name="contact"></textarea>
-            </div>
-          </div>
-          <input type="hidden" name="photo_data" value="" />
-          <div class="mast-summary">
-            <textarea class="field summary" name="summary"></textarea>
-          </div>
-        </section>
-
-        <div class="grid">
-          <section>
-            <h2 class="no-lines" data-i18n="experience">EXPERIENCE</h2>
-
-            <div id="experience-list">
-              <div class="section no-lines" data-exp-index="1">
-                <h3 class="field title" data-name="exp1_title" contenteditable="true" spellcheck="false"></h3>
-                <input
-                  type="hidden"
-                  name="exp1_title"
-                  value=""
-                />
-                <p class="field" data-name="exp1_meta" contenteditable="true" spellcheck="false"></p>
-                <input
-                  type="hidden"
-                  name="exp1_meta"
-                  value=""
-                />
-                <textarea class="field list-style" name="exp1_bullets"></textarea>
+            <div class="cover-grid">
+              <div>
+                <textarea class="field cover-field" name="cover_recipient" rows="5"></textarea>
               </div>
-
-              <div class="section no-lines" data-exp-index="2">
-                <h3 class="field title" data-name="exp2_title" contenteditable="true" spellcheck="false"></h3>
-                <input
-                  type="hidden"
-                  name="exp2_title"
-                  value=""
-                />
-                <p class="field" data-name="exp2_meta" contenteditable="true" spellcheck="false"></p>
-                <input
-                  type="hidden"
-                  name="exp2_meta"
-                  value=""
-                />
-                <textarea class="field list-style" name="exp2_bullets"></textarea>
-              </div>
-
-              <div class="section no-lines" data-exp-index="3">
-                <h3 class="field title" data-name="exp3_title" contenteditable="true" spellcheck="false"></h3>
-                <input
-                  type="hidden"
-                  name="exp3_title"
-                  value=""
-                />
-                <p class="field" data-name="exp3_meta" contenteditable="true" spellcheck="false"></p>
-                <input
-                  type="hidden"
-                  name="exp3_meta"
-                  value=""
-                />
-                <textarea class="field list-style" name="exp3_bullets"></textarea>
-              </div>
-
-              <div class="section no-lines" data-exp-index="4">
-                <h3 class="field title" data-name="exp4_title" contenteditable="true" spellcheck="false"></h3>
-                <input
-                  type="hidden"
-                  name="exp4_title"
-                  value=""
-                />
-                <p class="field" data-name="exp4_meta" contenteditable="true" spellcheck="false"></p>
-                <input
-                  type="hidden"
-                  name="exp4_meta"
-                  value=""
-                />
-                <textarea class="field list-style" name="exp4_bullets"></textarea>
+              <div>
+                <textarea class="field cover-field cover-date" name="cover_date" rows="1"></textarea>
               </div>
             </div>
-            <button type="button" id="add-exp-btn" data-i18n="add_experience">Add Experience</button>
+
+            <textarea class="field cover-text" name="cover_text"></textarea>
           </section>
 
-          <section>
-            <h2 class="underlined" data-i18n="skills">SKILLS</h2>
-            <textarea class="field list-style" name="skills"></textarea>
+          <section class="page resume-page">
+            <div class="badge"></div>
+            <div></div>
+            <section class="mast">
+              <div class="mast-photo">
+                <div class="photo-slot">
+                  <img id="photo-preview" alt="Resume photo" />
+                </div>
+              </div>
+              <div class="mast-left">
+                <h3 class="field title inline" data-name="name"></h3>
+                <input type="hidden" name="name" value="" />
+                <textarea class="field inline role" name="role" rows="1"></textarea>
+              </div>
+              <div class="mast-right">
+                <div class="contact">
+                  <textarea class="field" name="contact"></textarea>
+                </div>
+              </div>
+              <input type="hidden" name="photo_data" value="" />
+              <div class="mast-summary">
+                <textarea class="field summary" name="summary"></textarea>
+              </div>
+            </section>
 
-            <h2 class="underlined" data-i18n="education">EDUCATION</h2>
-            <textarea class="field list-style" name="edu_text"></textarea>
-            <h2 class="underlined" data-i18n="languages">LANGUAGES</h2>
-            <textarea class="field list-style" name="languages"></textarea>
-            <h2 class="underlined" data-i18n="certifications_training">CERTIFICATIONS & TRAINING</h2>
-            <textarea class="field list-style" name="certifications_training"></textarea>
-            <h2 class="underlined" data-i18n="interests_hobbies">INTERESSEN / HOBBYS:</h2>
-            <textarea class="field list-style" name="interests_hobbies"></textarea>
+            <div class="grid">
+              <section>
+                <h2 class="no-lines" data-i18n="experience">EXPERIENCE</h2>
+
+                <div id="experience-list">
+                  <div class="section no-lines" data-exp-index="1">
+                    <h3 class="field title" data-name="exp1_title" contenteditable="true" spellcheck="false"></h3>
+                    <input
+                      type="hidden"
+                      name="exp1_title"
+                      value=""
+                    />
+                    <p class="field" data-name="exp1_meta" contenteditable="true" spellcheck="false"></p>
+                    <input
+                      type="hidden"
+                      name="exp1_meta"
+                      value=""
+                    />
+                    <textarea class="field list-style" name="exp1_bullets"></textarea>
+                  </div>
+
+                  <div class="section no-lines" data-exp-index="2">
+                    <h3 class="field title" data-name="exp2_title" contenteditable="true" spellcheck="false"></h3>
+                    <input
+                      type="hidden"
+                      name="exp2_title"
+                      value=""
+                    />
+                    <p class="field" data-name="exp2_meta" contenteditable="true" spellcheck="false"></p>
+                    <input
+                      type="hidden"
+                      name="exp2_meta"
+                      value=""
+                    />
+                    <textarea class="field list-style" name="exp2_bullets"></textarea>
+                  </div>
+
+                  <div class="section no-lines" data-exp-index="3">
+                    <h3 class="field title" data-name="exp3_title" contenteditable="true" spellcheck="false"></h3>
+                    <input
+                      type="hidden"
+                      name="exp3_title"
+                      value=""
+                    />
+                    <p class="field" data-name="exp3_meta" contenteditable="true" spellcheck="false"></p>
+                    <input
+                      type="hidden"
+                      name="exp3_meta"
+                      value=""
+                    />
+                    <textarea class="field list-style" name="exp3_bullets"></textarea>
+                  </div>
+
+                  <div class="section no-lines" data-exp-index="4">
+                    <h3 class="field title" data-name="exp4_title" contenteditable="true" spellcheck="false"></h3>
+                    <input
+                      type="hidden"
+                      name="exp4_title"
+                      value=""
+                    />
+                    <p class="field" data-name="exp4_meta" contenteditable="true" spellcheck="false"></p>
+                    <input
+                      type="hidden"
+                      name="exp4_meta"
+                      value=""
+                    />
+                    <textarea class="field list-style" name="exp4_bullets"></textarea>
+                  </div>
+                </div>
+                <button type="button" id="add-exp-btn" data-i18n="add_experience">Add Experience</button>
+              </section>
+
+              <section>
+                <h2 class="underlined" data-i18n="skills">SKILLS</h2>
+                <textarea class="field list-style" name="skills"></textarea>
+
+                <h2 class="underlined" data-i18n="education">EDUCATION</h2>
+                <textarea class="field list-style" name="edu_text"></textarea>
+                <h2 class="underlined" data-i18n="languages">LANGUAGES</h2>
+                <textarea class="field list-style" name="languages"></textarea>
+                <h2 class="underlined" data-i18n="certifications_training">CERTIFICATIONS & TRAINING</h2>
+                <textarea class="field list-style" name="certifications_training"></textarea>
+                <h2 class="underlined" data-i18n="interests_hobbies">INTERESSEN / HOBBYS:</h2>
+                <textarea class="field list-style" name="interests_hobbies"></textarea>
+              </section>
+            </div>
           </section>
         </div>
-      </section>
 
-      <div class="controls">
-        <label class="profile-list-control">
-          <span data-i18n="profile_list">Saved profiles</span>
-          <select id="profile-select"></select>
-        </label>
-        <button type="button" id="new-resume-btn" data-i18n="new_resume">New Resume</button>
-        <label class="photo-upload-control">
-          <span data-i18n="photo">Photo</span>
-          <input type="file" id="photo-input" accept="image/*" />
-        </label>
-        <button type="button" id="photo-clear-btn" data-i18n="remove_photo">Remove Photo</button>
-        <button type="submit" id="save-btn" data-i18n="save">Save</button>
-        <button type="button" id="print-btn" data-i18n="print">Export as PDF (Text)</button>
-        <button type="button" id="lang-btn">Deutsch</button>
-        <span id="status">Not saved yet</span>
+        <aside class="control-sidebar">
+          <div class="controls">
+            <div class="command-bar">
+              <div class="command-title">Profile</div>
+              <div class="control-group">
+                <label class="profile-list-control">
+                  <span data-i18n="profile_list">Saved profiles</span>
+                  <select id="profile-select"></select>
+                </label>
+                <button type="button" id="new-resume-btn" data-i18n="new_resume">New Resume</button>
+              </div>
+            </div>
+
+            <div class="command-bar">
+              <div class="command-title">Text Style</div>
+              <div class="control-group">
+                <span class="style-target" id="style-target-label" data-i18n="style_selected_none">Selected: none</span>
+                <span class="style-target" id="style-live-info" data-i18n="style_live_none">Size: -</span>
+                <label class="style-control">
+                  <span data-i18n="style_font">Font</span>
+                  <select id="style-font">
+                    <option value="Inter, Roboto, Arial, Helvetica, sans-serif">Inter</option>
+                    <option value="Roboto, Arial, Helvetica, sans-serif">Roboto</option>
+                    <option value="Arial, Helvetica, sans-serif">Arial</option>
+                    <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+                    <option value="Calibri, Arial, sans-serif">Calibri</option>
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                  </select>
+                </label>
+                <label class="style-control style-size-control">
+                  <span data-i18n="style_size">Size</span>
+                  <input id="style-size" type="number" min="8" max="40" step="0.5" value="14" />
+                </label>
+                <label class="style-control style-color-control">
+                  <span data-i18n="style_color">Color</span>
+                  <input id="style-color" type="color" value="#0e0f12" />
+                </label>
+                <label class="style-checkbox">
+                  <input id="style-bold" type="checkbox" />
+                  <span data-i18n="style_bold">Bold</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="command-bar">
+              <div class="command-title">Photo</div>
+              <div class="control-group">
+                <label class="photo-upload-control">
+                  <span data-i18n="photo">Photo</span>
+                  <input type="file" id="photo-input" accept="image/*" />
+                </label>
+                <button type="button" id="photo-clear-btn" data-i18n="remove_photo">Remove Photo</button>
+              </div>
+            </div>
+
+            <div class="command-bar">
+              <div class="command-title">Actions</div>
+              <div class="control-group">
+                <button type="submit" id="save-btn" data-i18n="save">Save</button>
+                <button type="button" id="print-btn" data-i18n="print">Export as PDF (Text)</button>
+                <button type="button" id="lang-btn">Deutsch</button>
+              </div>
+            </div>
+            <span id="status">Not saved yet</span>
+          </div>
+        </aside>
       </div>
     </form>
 
-    <script src="script.js?v=20"></script>
+    <script src="script.js?v=34"></script>
   </body>
 </html>
